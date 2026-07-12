@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+src-tauri/target/
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/buildSrc/.gradle/
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/local.properties
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.local
+
+# Android binaries
+*.apk
+*.aab
+
+# Keystore (keep debug keystore)
+*.keystore
+!debug.keystore
+
+# Temp
+*.log
+*.tmp
