@@ -3,6 +3,7 @@ use zeroize::Zeroize;
 use crate::db::{self, Category, PasswordDisplay, Template};
 use crate::generator::{self, GenConfig, PinConfig, PassphraseConfig};
 use crate::crypto;
+use crate::biometric;
 use crate::AppState;
 
 #[tauri::command]
@@ -243,4 +244,29 @@ pub async fn save_template(
 pub async fn delete_template(state: State<'_, AppState>, id: i64) -> Result<(), String> {
     let db = state.db.lock().map_err(|e| format!("{e}"))?;
     db::delete_template(&db, id)
+}
+
+#[tauri::command]
+pub async fn biometric_is_available() -> Result<bool, String> {
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn biometric_enable(state: State<'_, AppState>) -> Result<(), String> {
+    biometric::enable(&state)
+}
+
+#[tauri::command]
+pub async fn biometric_disable(state: State<'_, AppState>) -> Result<(), String> {
+    biometric::disable(&state)
+}
+
+#[tauri::command]
+pub async fn biometric_is_enabled(state: State<'_, AppState>) -> Result<bool, String> {
+    biometric::is_enabled(&state)
+}
+
+#[tauri::command]
+pub async fn biometric_unlock(state: State<'_, AppState>) -> Result<(), String> {
+    biometric::unlock(&state)
 }

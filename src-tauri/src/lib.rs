@@ -2,6 +2,7 @@ mod crypto;
 mod db;
 mod generator;
 mod commands;
+mod biometric;
 
 use std::sync::Mutex;
 use rusqlite::Connection;
@@ -14,8 +15,16 @@ pub struct AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_clipboard_manager::init())
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init());
+
+    #[cfg(mobile)]
+    {
+        builder = builder.plugin(tauri_plugin_biometric::init());
+    }
+
+    builder
         .setup(|app| {
             let app_data = app
                 .path()
@@ -52,6 +61,11 @@ pub fn run() {
             commands::get_templates,
             commands::save_template,
             commands::delete_template,
+            commands::biometric_is_available,
+            commands::biometric_enable,
+            commands::biometric_disable,
+            commands::biometric_is_enabled,
+            commands::biometric_unlock,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

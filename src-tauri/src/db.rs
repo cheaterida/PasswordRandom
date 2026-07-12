@@ -50,6 +50,13 @@ pub struct MasterConfig {
     pub verification_hash: Vec<u8>,
 }
 
+#[derive(Debug, Clone)]
+pub struct BiometricConfig {
+    pub ciphertext: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub salt: Vec<u8>,
+}
+
 pub fn init_tables(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS master_config (
@@ -81,6 +88,13 @@ pub fn init_tables(conn: &Connection) -> Result<(), String> {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             pattern TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS biometric_config (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            ciphertext BLOB NOT NULL,
+            nonce BLOB NOT NULL,
+            salt BLOB NOT NULL,
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS clipboard_expiry (
@@ -317,6 +331,46 @@ pub fn save_template(conn: &Connection, name: &str, pattern: &str) -> Result<Tem
 
 pub fn delete_template(conn: &Connection, id: i64) -> Result<(), String> {
     conn.execute("DELETE FROM templates WHERE id = ?1", params![id])
+        .map_err(|e| format!("{e}"))?;Ok(())
+}
+
+pub fn save_biometric_config(conn: &Connection, ciphertext: &[u8], nonce: &[u8], salt: &[u8]) -> Result<(), String> {
+    conn.execute(
+        "INSERT OR REPLACE INTO biometric_config (id, ciphertext, nonce, salt) VALUES (1, ?1, ?2, ?3)",
+        params![ciphertext, nonce, salt],
+    )
+    .map_err(|e| format!("{e}"))?;
+    Ok(())
+}
+
+pub fn delete_biometric_config(conn: &Connection) -> Result<(), String> {
+    conn.execute("DELETE FROM biometric_config", [])
         .map_err(|e| format!("{e}"))?;
     Ok(())
+}
+
+pub fn has_biometric_config(conn: &Connection) -> Result<bool, String> {
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM biometric_config", [], |row| row.get(0))
+        .unwrap_or(0);
+    Ok(count > 0)
+}
+
+pub fn get_biometric_config(conn: &Connection) -> Result<Option<BiometricConfig>, String> {
+    let res = conn.query_row(
+        "SELECT ciphertext, nonce, salt FROM biometric_config WHERE id = 1",
+        [],
+        |row| {
+            Ok(BiometricConfig {
+                ciphertext: row.get(0)?,
+                nonce: row.get(1)?,
+                salt: row.get(2)?,
+            })
+        },
+    );
+    match res {
+        Ok(cfg) => Ok(Some(cfg)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(format!("{e}")),
+    }
 }
