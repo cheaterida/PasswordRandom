@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue"
+import { invoke } from "@tauri-apps/api/core"
+import { checkStatus, authenticate } from "@tauri-apps/plugin-biometric"
 import { useHistoryStore } from "../stores/history"
 import CategoryManager from "./CategoryManager.vue"
 
@@ -14,24 +16,108 @@ const addCategoryId = ref<number | null>(null)
 const addError = ref("")
 const addSuccess = ref(false)
 
-onMounted(() => {
+const reAuthVerified = ref(false)
+const showReAuth = ref(false)
+const reAuthPassword = ref("")
+const reAuthError = ref("")
+const reAuthLoading = ref(false)
+const bioAvailable = ref(false)
+let pendingAction: (() => void) | null = null
+
+onMounted(async () => {
   historyStore.loadPasswords()
   historyStore.loadCategories()
+  try {
+    const status = await checkStatus()
+    bioAvailable.value = status.isAvailable
+  } catch {
+    bioAvailable.value = false
+  }
 })
 
+function requireReAuth(action: () => void) {
+  if (reAuthVerified.value) {
+    action()
+    return
+  }
+  pendingAction = action
+  reAuthPassword.value = ""
+  reAuthError.value = ""
+  showReAuth.value = true
+}
+
+async function handleReAuthPassword() {
+  reAuthError.value = ""
+  if (!reAuthPassword.value) {
+    reAuthError.value = "请输入主密码"
+    return
+  }
+  reAuthLoading.value = true
+  try {
+    const ok = await invoke<boolean>("unlock", { password: reAuthPassword.value })
+    if (!ok) {
+      reAuthError.value = "密码错误"
+      return
+    }
+    onReAuthSuccess()
+  } catch (e: unknown) {
+    reAuthError.value = String(e)
+  } finally {
+    reAuthLoading.value = false
+  }
+}
+
+async function handleReAuthBio() {
+  reAuthError.value = ""
+  reAuthLoading.value = true
+  try {
+    await authenticate("验证身份以查看密码")
+    await invoke("biometric_unlock")
+    onReAuthSuccess()
+  } catch {
+    reAuthError.value = "生物验证失败"
+  } finally {
+    reAuthLoading.value = false
+  }
+}
+
+function onReAuthSuccess() {
+  showReAuth.value = false
+  reAuthVerified.value = true
+  reAuthPassword.value = ""
+  if (pendingAction) {
+    const action = pendingAction
+    pendingAction = null
+    action()
+  }
+}
+
+function cancelReAuth() {
+  showReAuth.value = false
+  reAuthPassword.value = ""
+  reAuthError.value = ""
+  pendingAction = null
+}
+
 function toggleView(id: number) {
-  viewPassword.value[id] = !viewPassword.value[id]
+  requireReAuth(() => {
+    viewPassword.value[id] = !viewPassword.value[id]
+  })
 }
 
 async function copyPassword(password: string) {
-  const { writeText } = await import("@tauri-apps/plugin-clipboard-manager")
-  await writeText(password)
+  requireReAuth(async () => {
+    const { writeText } = await import("@tauri-apps/plugin-clipboard-manager")
+    await writeText(password)
+  })
 }
 
-async function doDelete(id: number, label: string) {
-  if (window.confirm(`确定删除 "${label}"?`)) {
-    await historyStore.deletePassword(id)
-  }
+function doDelete(id: number, label: string) {
+  requireReAuth(() => {
+    if (window.confirm(`确定删除 "${label}"?`)) {
+      historyStore.deletePassword(id)
+    }
+  })
 }
 
 async function handleAdd() {
@@ -195,6 +281,60 @@ function formatTime(ts: string) {
 
     <!-- Category Manager -->
     <CategoryManager />
+
+    <!-- Re-authentication Overlay -->
+    <div
+      v-if="showReAuth"
+      class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+      @click.self="cancelReAuth"
+    >
+      <div class="bg-zinc-800 border border-zinc-700 rounded-xl p-6 w-80 space-y-4 mx-4">
+        <h3 class="text-lg font-semibold text-zinc-100 text-center">验证身份</h3>
+        <p class="text-zinc-400 text-sm text-center">查看密码前请验证您的身份</p>
+
+        <div v-if="bioAvailable" >
+          <button
+            :disabled="reAuthLoading"
+            class="w-full py-2.5 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-800 text-zinc-200 rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 text-sm"
+            @click="handleReAuthBio"
+          >
+            <span class="text-lg">👆</span>
+            <span>{{ reAuthLoading ? "验证中..." : "生物识别验证" }}</span>
+          </button>
+          <div class="flex items-center gap-3 my-3">
+            <div class="flex-1 h-px bg-zinc-700"></div>
+            <span class="text-zinc-600 text-xs">或输入密码</span>
+            <div class="flex-1 h-px bg-zinc-700"></div>
+          </div>
+        </div>
+
+        <input
+          v-model="reAuthPassword"
+          type="password"
+          placeholder="主密码"
+          class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 text-sm"
+          @keyup.enter="handleReAuthPassword"
+        />
+        <div v-if="reAuthError" class="text-red-400 text-xs text-center bg-red-900/30 py-1.5 rounded-lg">
+          {{ reAuthError }}
+        </div>
+        <div class="flex gap-2">
+          <button
+            class="flex-1 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors cursor-pointer text-sm"
+            @click="cancelReAuth"
+          >
+            取消
+          </button>
+          <button
+            :disabled="reAuthLoading"
+            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white rounded-lg transition-colors cursor-pointer text-sm"
+            @click="handleReAuthPassword"
+          >
+            {{ reAuthLoading ? "验证中..." : "验证" }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Add Password Overlay -->
     <div

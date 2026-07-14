@@ -90,12 +90,12 @@ async function handleBioAuth() {
   bioLoading.value = true
   error.value = ""
   try {
-    await authenticate("验证指纹以解锁")
+    await authenticate("验证生物以解锁")
     await invoke("biometric_unlock")
     auth.setLocked(false)
     emit("unlocked")
   } catch (e: unknown) {
-    error.value = "指纹验证失败，请使用密码"
+    error.value = "生物验证失败，请使用密码"
   } finally {
     bioLoading.value = false
   }
@@ -141,9 +141,9 @@ function skipBio() {
       <!-- Bio Prompt -->
       <div v-if="showBioPrompt" class="text-center mb-8">
         <div class="text-6xl mb-4">👆</div>
-        <h1 class="text-xl font-bold text-zinc-100">启用指纹解锁</h1>
+        <h1 class="text-xl font-bold text-zinc-100">启用生物解锁</h1>
         <p class="text-zinc-400 text-sm mt-2">
-          下次你可以使用指纹快速解锁，无需输入密码
+          下次你可以使用生物快速解锁，无需输入密码
         </p>
       </div>
 
@@ -156,7 +156,7 @@ function skipBio() {
           @click="handleBioAuth"
         >
           <span class="text-xl">👆</span>
-          <span>{{ bioLoading ? "验证中..." : "指纹解锁" }}</span>
+          <span>{{ bioLoading ? "验证中..." : "生物解锁" }}</span>
         </button>
 
         <div
@@ -207,7 +207,7 @@ function skipBio() {
           class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors cursor-pointer"
           @click="enableBio"
         >
-          启用指纹解锁
+          启用生物解锁
         </button>
         <button
           class="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded-lg transition-colors cursor-pointer"
