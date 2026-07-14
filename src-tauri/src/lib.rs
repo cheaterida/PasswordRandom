@@ -70,6 +70,8 @@ pub fn run() {
             commands::biometric_is_enabled,
             commands::biometric_unlock,
             commands::get_db_path,
+            commands::get_preference,
+            commands::set_preference,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

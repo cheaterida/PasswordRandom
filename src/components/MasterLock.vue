@@ -17,6 +17,19 @@ const bioAvailable = ref(false)
 const bioEnabled = ref(false)
 const bioLoading = ref(false)
 const showBioPrompt = ref(false)
+const bioPromptDismissed = ref(false)
+
+async function shouldShowBioPrompt() {
+  if (bioPromptDismissed.value) return false
+  try {
+    const v = await invoke<null | string>("get_preference", { key: "bio_prompt_dismissed" })
+    if (v === "true") {
+      bioPromptDismissed.value = true
+      return false
+    }
+  } catch { /* ignore */ }
+  return bioAvailable.value && !bioEnabled.value
+}
 
 onMounted(async () => {
   await auth.checkStatus()
@@ -61,7 +74,7 @@ async function handleSubmit() {
     if (isSetup.value) {
       await invoke("init_master_key", { password: password.value })
       auth.setLocked(false)
-      if (bioAvailable.value) {
+      if (await shouldShowBioPrompt()) {
         showBioPrompt.value = true
       } else {
         emit("unlocked")
@@ -73,7 +86,7 @@ async function handleSubmit() {
         return
       }
       auth.setLocked(false)
-      if (bioAvailable.value && !bioEnabled.value) {
+      if (await shouldShowBioPrompt()) {
         showBioPrompt.value = true
       } else {
         emit("unlocked")
@@ -115,6 +128,15 @@ async function enableBio() {
 }
 
 function skipBio() {
+  showBioPrompt.value = false
+  emit("unlocked")
+}
+
+async function skipBioForever() {
+  try {
+    await invoke("set_preference", { key: "bio_prompt_dismissed", value: "true" })
+  } catch { /* ignore */ }
+  bioPromptDismissed.value = true
   showBioPrompt.value = false
   emit("unlocked")
 }
@@ -214,6 +236,12 @@ function skipBio() {
           @click="skipBio"
         >
           暂不启用
+        </button>
+        <button
+          class="w-full py-3 text-zinc-600 hover:text-zinc-400 text-sm rounded-lg transition-colors cursor-pointer"
+          @click="skipBioForever"
+        >
+          不再提醒
         </button>
       </div>
     </div>

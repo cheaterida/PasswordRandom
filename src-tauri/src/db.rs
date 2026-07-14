@@ -9,6 +9,28 @@ pub struct Category {
     pub created_at: String,
 }
 
+pub fn get_preference(conn: &Connection, key: &str) -> Result<Option<String>, String> {
+    let res = conn.query_row(
+        "SELECT value FROM app_preferences WHERE key = ?1",
+        params![key],
+        |row| row.get(0),
+    );
+    match res {
+        Ok(v) => Ok(Some(v)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(format!("{e}")),
+    }
+}
+
+pub fn set_preference(conn: &Connection, key: &str, value: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT OR REPLACE INTO app_preferences (key, value) VALUES (?1, ?2)",
+        params![key, value],
+    )
+    .map_err(|e| format!("{e}"))?;
+    Ok(())
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PasswordEntry {
     pub id: i64,
@@ -96,6 +118,10 @@ pub fn init_tables(conn: &Connection) -> Result<(), String> {
             nonce BLOB NOT NULL,
             salt BLOB NOT NULL,
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS app_preferences (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS clipboard_expiry (
             id INTEGER PRIMARY KEY CHECK (id = 1),

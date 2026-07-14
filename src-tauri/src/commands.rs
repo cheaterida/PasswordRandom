@@ -275,3 +275,15 @@ pub async fn biometric_unlock(state: State<'_, AppState>) -> Result<(), String> 
 pub async fn get_db_path(state: State<'_, AppState>) -> Result<String, String> {
     Ok(state.db_path.clone())
 }
+
+#[tauri::command]
+pub async fn get_preference(state: State<'_, AppState>, key: String) -> Result<Option<String>, String> {
+    let db = state.db.lock().map_err(|e| format!("{e}"))?;
+    db::get_preference(&db, &key)
+}
+
+#[tauri::command]
+pub async fn set_preference(state: State<'_, AppState>, key: String, value: String) -> Result<(), String> {
+    let db = state.db.lock().map_err(|e| format!("{e}"))?;
+    db::set_preference(&db, &key, &value)
+}
