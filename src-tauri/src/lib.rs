@@ -11,6 +11,7 @@ use tauri::Manager;
 pub struct AppState {
     pub db: Mutex<Connection>,
     pub key: Mutex<Option<[u8; 32]>>,
+    pub db_path: String,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -32,11 +33,13 @@ pub fn run() {
                 .expect("failed to get app data dir");
             std::fs::create_dir_all(&app_data).expect("failed to create app data dir");
             let db_path = app_data.join("password_random.db");
+            let db_path_str = db_path.to_string_lossy().to_string();
             let conn = Connection::open(&db_path).expect("failed to open database");
             db::init_tables(&conn).expect("failed to initialize tables");
             app.manage(AppState {
                 db: Mutex::new(conn),
                 key: Mutex::new(None),
+                db_path: db_path_str,
             });
             Ok(())
         })
@@ -66,6 +69,7 @@ pub fn run() {
             commands::biometric_disable,
             commands::biometric_is_enabled,
             commands::biometric_unlock,
+            commands::get_db_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

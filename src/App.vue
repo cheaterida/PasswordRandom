@@ -4,9 +4,10 @@ import { invoke } from "@tauri-apps/api/core"
 import MasterLock from "./components/MasterLock.vue"
 import GeneratorPanel from "./components/GeneratorPanel.vue"
 import PasswordHistory from "./components/PasswordHistory.vue"
+import Settings from "./components/Settings.vue"
 
 const locked = ref(true)
-const activeTab = ref<"generate" | "history">("generate")
+const activeTab = ref<"generate" | "history" | "settings">("generate")
 const showAbout = ref(false)
 
 async function onUnlocked() {
@@ -70,12 +71,24 @@ async function onLock() {
         >
           历史
         </button>
+        <button
+          :class="[
+            'flex-1 flex items-center justify-center py-2.5 text-sm font-medium cursor-pointer transition-colors',
+            activeTab === 'settings'
+              ? 'text-emerald-400 border-b-2 border-emerald-400'
+              : 'text-zinc-500 hover:text-zinc-300',
+          ]"
+          @click="activeTab = 'settings'"
+        >
+          设置
+        </button>
       </nav>
 
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto px-6 py-4">
         <GeneratorPanel v-if="activeTab === 'generate'" />
-        <PasswordHistory v-else />
+        <PasswordHistory v-else-if="activeTab === 'history'" />
+        <Settings v-else />
       </main>
 
       <!-- About Modal -->

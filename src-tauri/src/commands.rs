@@ -270,3 +270,8 @@ pub async fn biometric_is_enabled(state: State<'_, AppState>) -> Result<bool, St
 pub async fn biometric_unlock(state: State<'_, AppState>) -> Result<(), String> {
     biometric::unlock(&state)
 }
+
+#[tauri::command]
+pub async fn get_db_path(state: State<'_, AppState>) -> Result<String, String> {
+    Ok(state.db_path.clone())
+}
