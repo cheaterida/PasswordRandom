@@ -293,3 +293,15 @@ pub async fn set_preference(state: State<'_, AppState>, key: String, value: Stri
     let db = state.db.lock().map_err(|e| format!("{e}"))?;
     db::set_preference(&db, &key, &value)
 }
+
+#[tauri::command]
+pub async fn toggle_favorite(state: State<'_, AppState>, id: i64) -> Result<bool, String> {
+    let db = state.db.lock().map_err(|e| format!("{e}"))?;
+    db::toggle_favorite(&db, id)
+}
+
+#[tauri::command]
+pub async fn delete_passwords(state: State<'_, AppState>, ids: Vec<i64>) -> Result<(), String> {
+    let db = state.db.lock().map_err(|e| format!("{e}"))?;
+    db::delete_passwords(&db, &ids)
+}

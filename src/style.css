@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+.light,
+.light .bg-zinc-900 { background-color: #f4f4f5; }
+.light .bg-zinc-800 { background-color: #e4e4e7; }
+.light .bg-zinc-700 { background-color: #d4d4d8; }
+.light .text-zinc-100 { color: #18181b; }
+.light .text-zinc-200 { color: #27272a; }
+.light .text-zinc-300 { color: #3f3f46; }
+.light .text-zinc-400 { color: #52525b; }
+.light .text-zinc-500 { color: #71717a; }
+.light .text-zinc-600 { color: #a1a1aa; }
+.light .border-zinc-700 { border-color: #d4d4d8; }
+.light .placeholder-zinc-500::placeholder { color: #a1a1aa; }
+.light .border-zinc-700\/50 { border-color: rgb(161 161 170 / 0.5); }

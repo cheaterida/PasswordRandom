@@ -35,6 +35,7 @@ export interface PasswordDisplay {
   password: string
   mode: string
   template_id: number | null
+  is_favorite: boolean
   created_at: string
 }
 

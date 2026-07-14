@@ -40,7 +40,12 @@ function teardownAutoLock() {
   }
 }
 
-onMounted(setupAutoLock)
+onMounted(() => {
+  setupAutoLock()
+  if (localStorage.getItem("theme") === "light") {
+    document.documentElement.classList.add("light")
+  }
+})
 onUnmounted(teardownAutoLock)
 
 async function onUnlocked() {
@@ -122,7 +127,7 @@ async function onLock() {
       <main class="flex-1 overflow-y-auto px-6 py-4">
         <GeneratorPanel v-if="activeTab === 'generate'" />
         <PasswordHistory v-else-if="activeTab === 'history'" />
-        <Settings v-else />
+        <Settings v-else @show-about="showAbout = true" />
       </main>
 
       <!-- About Modal -->

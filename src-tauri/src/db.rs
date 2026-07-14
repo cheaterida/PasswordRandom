@@ -9,6 +9,28 @@ pub struct Category {
     pub created_at: String,
 }
 
+pub fn toggle_favorite(conn: &Connection, id: i64) -> Result<bool, String> {
+    conn.execute(
+        "UPDATE password_history SET is_favorite = CASE WHEN is_favorite = 0 THEN 1 ELSE 0 END WHERE id = ?1",
+        params![id],
+    )
+    .map_err(|e| format!("{e}"))?;
+    let fav: i32 = conn
+        .query_row("SELECT is_favorite FROM password_history WHERE id = ?1", params![id], |row| row.get(0))
+        .unwrap_or(0);
+    Ok(fav != 0)
+}
+
+pub fn delete_passwords(conn: &Connection, ids: &[i64]) -> Result<(), String> {
+    if ids.is_empty() { return Ok(()); }
+    let placeholders: Vec<String> = (0..ids.len()).map(|i| format!("?{}", i + 1)).collect();
+    let sql = format!("DELETE FROM password_history WHERE id IN ({})", placeholders.join(","));
+    let params: Vec<&dyn rusqlite::types::ToSql> = ids.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
+    conn.execute(&sql, params.as_slice())
+        .map_err(|e| format!("{e}"))?;
+    Ok(())
+}
+
 pub fn get_preference(conn: &Connection, key: &str) -> Result<Option<String>, String> {
     let res = conn.query_row(
         "SELECT value FROM app_preferences WHERE key = ?1",
@@ -62,6 +84,7 @@ pub struct PasswordDisplay {
     pub password: String,
     pub mode: String,
     pub template_id: Option<i64>,
+    pub is_favorite: bool,
     pub created_at: String,
 }
 
@@ -103,6 +126,7 @@ pub fn init_tables(conn: &Connection) -> Result<(), String> {
             nonce BLOB NOT NULL,
             mode TEXT NOT NULL,
             template_id INTEGER,
+            is_favorite INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
         );
@@ -130,6 +154,13 @@ pub fn init_tables(conn: &Connection) -> Result<(), String> {
         INSERT OR IGNORE INTO clipboard_expiry (id, expiry_time) VALUES (1, 30);",
     )
     .map_err(|e| format!("DB init failed: {e}"))?;
+
+    // Migration: add is_favorite column if upgrading from older version
+    let _ = conn.execute(
+        "ALTER TABLE password_history ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0",
+        [],
+    );
+
     Ok(())
 }
 
@@ -206,16 +237,16 @@ pub fn get_passwords(
 ) -> Result<Vec<PasswordDisplay>, String> {
     let query = match (category_id, search) {
         (Some(_), Some(_)) => {
-            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id WHERE ph.category_id = ?1 AND (ph.label LIKE ?2 OR ph.username LIKE ?2) ORDER BY ph.created_at DESC"
+            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.is_favorite, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id WHERE ph.category_id = ?1 AND (ph.label LIKE ?2 OR ph.username LIKE ?2) ORDER BY ph.is_favorite DESC, ph.created_at DESC"
         }
         (Some(_), None) => {
-            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id WHERE ph.category_id = ?1 ORDER BY ph.created_at DESC"
+            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.is_favorite, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id WHERE ph.category_id = ?1 ORDER BY ph.is_favorite DESC, ph.created_at DESC"
         }
         (None, Some(_)) => {
-            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id WHERE ph.label LIKE ?1 OR ph.username LIKE ?1 ORDER BY ph.created_at DESC"
+            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.is_favorite, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id WHERE ph.label LIKE ?1 OR ph.username LIKE ?1 ORDER BY ph.is_favorite DESC, ph.created_at DESC"
         }
         (None, None) => {
-            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id ORDER BY ph.created_at DESC"
+            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id ORDER BY ph.is_favorite DESC, ph.created_at DESC"
         }
     };
 
@@ -270,7 +301,8 @@ fn map_password_row(
             password: password_str,
             mode: row.get(7)?,
             template_id: row.get(8)?,
-            created_at: row.get(9)?,
+            is_favorite: row.get::<_, i32>(9)? != 0,
+            created_at: row.get(10)?,
         })
     }
 }

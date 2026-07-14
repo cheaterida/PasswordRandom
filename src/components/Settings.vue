@@ -4,9 +4,14 @@ import { invoke } from "@tauri-apps/api/core"
 import { writeText } from "@tauri-apps/plugin-clipboard-manager"
 import { checkStatus, authenticate } from "@tauri-apps/plugin-biometric"
 
+const emit = defineEmits<{ showAbout: [] }>()
+
 const bioAvailable = ref(false)
 const bioEnabled = ref(false)
 const bioLoading = ref(false)
+
+const isLight = ref(false)
+const themeLoading = ref(false)
 
 const dbPath = ref("")
 const dbPathRevealed = ref(false)
@@ -27,6 +32,8 @@ const reAuthLoading = ref(false)
 let reAuthResolve: (() => void) | null = null
 
 onMounted(async () => {
+  isLight.value = localStorage.getItem("theme") === "light"
+  applyTheme()
   try {
     const status = await checkStatus()
     bioAvailable.value = status.isAvailable
@@ -180,6 +187,22 @@ function toggleDbPath() {
     dbPath.value = ""
   }
 }
+
+function applyTheme() {
+  if (isLight.value) {
+    document.documentElement.classList.add("light")
+  } else {
+    document.documentElement.classList.remove("light")
+  }
+}
+
+async function toggleTheme() {
+  themeLoading.value = true
+  isLight.value = !isLight.value
+  applyTheme()
+  localStorage.setItem("theme", isLight.value ? "light" : "dark")
+  themeLoading.value = false
+}
 </script>
 
 <template>
@@ -292,29 +315,42 @@ function toggleDbPath() {
       </div>
     </div>
 
-    <!-- App Info -->
-    <div class="bg-zinc-800 rounded-xl p-4 border border-zinc-700 text-center">
-      <div class="text-3xl mb-2">🔐</div>
-      <div class="text-zinc-200 font-semibold">密码随机生成器</div>
-      <div class="text-zinc-500 text-xs mt-1">v0.1.0</div>
-      <div class="bg-zinc-900 rounded-lg p-3 mt-3 text-left space-y-1.5 text-xs">
-        <div class="flex justify-between">
-          <span class="text-zinc-500">开发者</span>
-          <span class="text-zinc-300">cheater</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-zinc-500">许可证</span>
-          <span class="text-zinc-300">MIT</span>
-        </div>
+    <!-- Theme -->
+    <div class="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+      <div class="flex items-center justify-between">
         <div>
-          <span class="text-zinc-500">仓库</span>
-          <div class="text-emerald-400 font-mono mt-0.5 break-all">
-            github.com/cheaterida/PasswordRandom
+          <div class="text-zinc-200 text-sm font-medium">
+            {{ isLight ? "浅色主题" : "深色主题" }}
           </div>
+          <div class="text-zinc-500 text-xs mt-0.5">切换界面明亮度</div>
         </div>
+        <button
+          :disabled="themeLoading"
+          :class="[
+            'w-12 h-7 rounded-full transition-colors cursor-pointer shrink-0 relative',
+            isLight ? 'bg-amber-500' : 'bg-zinc-600',
+          ]"
+          @click="toggleTheme"
+        >
+          <div
+            :class="[
+              'absolute top-0.5 w-6 h-6 rounded-full bg-white transition-transform flex items-center justify-center text-xs',
+              isLight ? 'translate-x-5' : 'translate-x-0.5',
+            ]"
+          >
+            {{ isLight ? "☀️" : "🌙" }}
+          </div>
+        </button>
       </div>
-      <p class="text-zinc-600 text-xs mt-3">愿你的每一个密码都安全无忧 🙏</p>
     </div>
+
+    <!-- About -->
+    <button
+      class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl text-zinc-400 hover:text-zinc-200 text-sm transition-colors cursor-pointer"
+      @click="emit('showAbout')"
+    >
+      关于应用
+    </button>
 
     <!-- Re-auth Overlay -->
     <div

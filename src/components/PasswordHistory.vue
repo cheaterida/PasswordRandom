@@ -8,6 +8,9 @@ import CategoryManager from "./CategoryManager.vue"
 const historyStore = useHistoryStore()
 const viewPassword = ref<Record<number, boolean>>({})
 
+const batchMode = ref(false)
+const selectedIds = ref<Set<number>>(new Set())
+
 const showAddPanel = ref(false)
 const addLabel = ref("")
 const addUsername = ref("")
@@ -120,6 +123,42 @@ function doDelete(id: number, label: string) {
   })
 }
 
+async function toggleFavorite(id: number) {
+  try {
+    await invoke<boolean>("toggle_favorite", { id })
+    await historyStore.loadPasswords()
+  } catch { /* ignore */ }
+}
+
+function toggleBatchMode() {
+  batchMode.value = !batchMode.value
+  selectedIds.value = new Set()
+}
+
+function toggleSelect(id: number) {
+  const s = new Set(selectedIds.value)
+  if (s.has(id)) { s.delete(id) } else { s.add(id) }
+  selectedIds.value = s
+}
+
+function selectAll() {
+  const all = new Set(historyStore.passwords.map((p) => p.id))
+  selectedIds.value = all
+}
+
+async function batchDelete() {
+  if (selectedIds.value.size === 0) return
+  requireReAuth(() => {
+    if (window.confirm(`确定删除 ${selectedIds.value.size} 条记录?`)) {
+      invoke("delete_passwords", { ids: [...selectedIds.value] }).then(() => {
+        selectedIds.value = new Set()
+        batchMode.value = false
+        historyStore.loadPasswords()
+      })
+    }
+  })
+}
+
 async function handleAdd() {
   addError.value = ""
   if (!addLabel.value.trim()) {
@@ -199,6 +238,34 @@ function formatTime(ts: string) {
       </div>
     </div>
 
+    <!-- Batch Controls -->
+    <div class="flex gap-2 mb-3 justify-center">
+      <button
+        :class="[
+          'px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-colors',
+          batchMode ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-zinc-200',
+        ]"
+        @click="toggleBatchMode"
+      >
+        {{ batchMode ? "退出多选" : "批量管理" }}
+      </button>
+      <template v-if="batchMode && historyStore.passwords.length > 0">
+        <button
+          class="px-3 py-1.5 text-xs bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-lg hover:text-zinc-200 cursor-pointer"
+          @click="selectAll"
+        >
+          全选
+        </button>
+        <button
+          v-if="selectedIds.size > 0"
+          class="px-3 py-1.5 text-xs bg-red-900/50 text-red-400 border border-red-800 rounded-lg hover:bg-red-900 cursor-pointer"
+          @click="batchDelete"
+        >
+          删除({{ selectedIds.size }})
+        </button>
+      </template>
+    </div>
+
     <!-- Passwords List -->
     <div v-if="historyStore.loading" class="text-center text-zinc-500 py-8">
       ...
@@ -218,6 +285,13 @@ function formatTime(ts: string) {
         <div class="flex items-start justify-between">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
+              <button
+                class="text-sm cursor-pointer shrink-0"
+                :class="pw.is_favorite ? 'text-yellow-400' : 'text-zinc-600 hover:text-yellow-400'"
+                @click="toggleFavorite(pw.id)"
+              >
+                {{ pw.is_favorite ? "★" : "☆" }}
+              </button>
               <span class="text-zinc-200 font-medium text-sm truncate">
                 {{ pw.label }}
               </span>
@@ -250,6 +324,13 @@ function formatTime(ts: string) {
           </div>
 
           <div class="flex items-center gap-1 ml-2 shrink-0">
+            <input
+              v-if="batchMode"
+              type="checkbox"
+              :checked="selectedIds.has(pw.id)"
+              class="accent-emerald-500 w-4 h-4 shrink-0 cursor-pointer"
+              @change="toggleSelect(pw.id)"
+            />
             <button
               class="text-xs px-1.5 py-1 rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-400 hover:text-zinc-200 cursor-pointer transition-colors"
               @click="toggleView(pw.id)"

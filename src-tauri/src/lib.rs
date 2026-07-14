@@ -73,6 +73,8 @@ pub fn run() {
             commands::get_db_path,
             commands::get_preference,
             commands::set_preference,
+            commands::toggle_favorite,
+            commands::delete_passwords,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
