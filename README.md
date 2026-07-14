@@ -1,12 +1,158 @@
 # 🔐 PasswordRandom
 
-> 私人密码随机生成器 · 安全 · 离线 · 跨平台
+> Private password generator &amp; manager · Secure · Offline · Cross-platform
 
 [![MIT License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v0.1.0-blue)](https://github.com/cheaterida/PasswordRandom/releases)
+[![Release](https://img.shields.io/badge/release-v0.1.1-blue)](https://github.com/cheaterida/PasswordRandom/releases)
 [![Tauri](https://img.shields.io/badge/Tauri-2.x-orange)](https://tauri.app)
 [![Vue](https://img.shields.io/badge/Vue-3.5-brightgreen)](https://vuejs.org)
 [![Rust](https://img.shields.io/badge/Rust-1.97-red)](https://rust-lang.org)
+
+---
+
+**English** · [中文](#chinese)
+
+## ✨ Features
+
+- **4 generation modes** — Random / PIN / Passphrase / Custom Template
+- **Master password** — Argon2id key derivation; data locked without it
+- **AES-256-GCM encryption** — Military-grade encryption for all stored passwords
+- **Biometric unlock** (Android) — Fingerprint &amp; face recognition
+- **Password history** — Categories, search, show/hide, copy
+- **Manual entry** — Add your own existing passwords
+- **Fully offline** — Data stored locally, never uploaded
+- **Cross-platform** — Windows desktop + Android
+
+## 📥 Download
+
+Get the latest from [Releases](https://github.com/cheaterida/PasswordRandom/releases):
+
+| Platform | File |
+|---|---|
+| Windows 64-bit | `PasswordRandom-v0.1.1-windows-x64.exe` |
+| Android | `PasswordRandom-v0.1.1-android.apk` |
+
+> Windows: run the .exe directly — no runtime dependencies required.
+
+## 📖 Usage
+
+### First time
+1. Set a **master password** (6+ characters)
+2. Optionally enable biometric unlock (Android)
+3. Enter the main interface
+
+### Generator modes
+- **Random** — length + character sets (upper/lower/digits/symbols), exclude ambiguous chars
+- **PIN** — numeric-only, optional consecutive/sequential restrictions
+- **Passphrase** — word-based, easy to remember, e.g. `correct-horse-battery-staple`
+- **Template** — custom format, e.g. `[word]-[digit:4]` → `dawn-4721`
+
+### Password management
+- Save generated passwords to encrypted history with labels &amp; categories
+- Manually add your own passwords
+- Filter by category, search by keyword
+- Auto-lock after 5 minutes of inactivity
+
+## 🏗 Architecture
+
+```
+┌──────────────────────────────────────────┐
+│             Frontend (Vue 3 + TS)         │
+│    MasterLock  │  Generator  │  History   │
+│    (unlock)    │  (4 modes)   │  (vault)   │
+├──────────────────────────────────────────┤
+│            Tauri v2 (IPC bridge)          │
+├──────────────────────────────────────────┤
+│              Backend (Rust)               │
+│  crypto    │   db     │  generator       │
+│  Argon2id  │  SQLite  │  rand + template │
+│  AES-GCM   │  CRUD    │  500+ wordlist   │
+├──────────────────────────────────────────┤
+│           Native interfaces               │
+│   Biometric  │  Clipboard                │
+└──────────────────────────────────────────┘
+```
+
+### Security
+
+```
+Master password ─→ Argon2id ─→ Derived key
+                                   │
+                    ┌──────────────┴──────────────┐
+                    ▼                             ▼
+              Login verification        AES-256-GCM encrypt/decrypt
+                                        all history stored as ciphertext
+```
+
+- Master password **never stored** — only Argon2id verification hash
+- Encryption key exists in memory only when unlocked — destroyed on lock/exit
+- Biometric auth verified through system-level BiometricPrompt (Android)
+
+## 📂 Project structure
+
+```
+├── src/                        # Vue 3 frontend
+│   ├── components/
+│   │   ├── MasterLock.vue      # Unlock + biometric
+│   │   ├── GeneratorPanel.vue  # Password generator
+│   │   ├── PasswordHistory.vue # History & vault
+│   │   ├── TemplateEditor.vue  # Template manager
+│   │   ├── CategoryManager.vue # Category manager
+│   │   └── Settings.vue        # App settings
+│   ├── stores/                 # Pinia state
+│   └── types/                  # TypeScript types
+├── src-tauri/                  # Rust backend
+│   └── src/
+│       ├── main.rs / lib.rs    # Entry & config
+│       ├── commands.rs         # Tauri IPC commands
+│       ├── crypto.rs           # Encryption module
+│       ├── db.rs               # SQLite database
+│       ├── generator.rs        # Password engine
+│       └── biometric.rs        # Biometric key storage
+└── src-tauri/gen/android/      # Android project
+```
+
+## 🔧 Building from source
+
+### Prerequisites
+
+- **Rust** 1.70+ (`rustup`)
+- **Node.js** 18+ (`node`)
+- **VS Build Tools** (Windows MSVC)
+- **Android** — JDK 17 + Android SDK + NDK 27
+
+### Build steps
+
+```bash
+# Clone
+git clone git@github.com:cheaterida/PasswordRandom.git
+cd PasswordRandom
+
+# Install frontend deps
+npm install
+
+# Windows
+npx tauri build
+
+# Android (requires ANDROID_HOME / NDK_HOME / JAVA_HOME)
+npx tauri android build --apk --target aarch64
+```
+
+## 📄 License
+
+[MIT](LICENSE) © 2026 cheater
+
+---
+
+<p align="center">May every password of yours be safe and secure 🙏</p>
+
+---
+
+<h2 id="chinese">中文</h2>
+
+# 🔐 PasswordRandom
+
+> 私人密码随机生成器 · 安全 · 离线 · 跨平台
 
 ---
 
@@ -15,7 +161,7 @@
 - **4 种密码生成模式** — 随机密码 / PIN 数字 / 密语短语 / 模板定制
 - **主密码保护** — Argon2id 密钥派生，无主密码无法解密数据
 - **AES-256-GCM 加密** — 所有存储密码经军事级加密
-- **指纹解锁** (Android) — 快速安全，免输密码
+- **生物识别解锁** (Android) — 指纹 + 人脸，快速安全
 - **密码历史管理** — 分类标注、搜索、查看/隐藏/复制
 - **手动添加** — 支持录入自有密码统一管理
 - **完全离线** — 数据仅存储在本地，不上传任何服务器
@@ -27,8 +173,8 @@
 
 | 平台 | 文件 |
 |---|---|
-| Windows 64位 | `PasswordRandom-v0.1.0-windows-x64.exe` |
-| Android | `PasswordRandom-v0.1.0-android-universal.apk` |
+| Windows 64位 | `PasswordRandom-v0.1.1-windows-x64.exe` |
+| Android | `PasswordRandom-v0.1.1-android.apk` |
 
 > Windows 版直接运行，无需安装任何运行时依赖。
 
@@ -36,7 +182,7 @@
 
 ### 首次使用
 1. 启动后设置一个**主密码**（至少 6 位）
-2. 选择是否启用指纹解锁（仅 Android）
+2. 选择是否启用生物解锁（仅 Android）
 3. 进入主界面
 
 ### 生成密码
@@ -49,16 +195,17 @@
 - 生成的密码可**保存到加密历史**，标注用途和分类
 - 支持**手动添加**自有密码统一管理
 - 按分类筛选、关键词搜索
+- 5 分钟无操作自动锁定
 
 ## 🏗 技术架构
 
 ```
 ┌──────────────────────────────────────────┐
-│                 前端 (Vue 3 + TS)          │
+│              前端 (Vue 3 + TS)            │
 │    MasterLock  │  Generator  │  History   │
-│    (解锁/指纹)  │  (4种模式)   │  (加密库)  │
+│    (解锁)       │  (4种模式)   │  (加密库)  │
 ├──────────────────────────────────────────┤
-│              Tauri v2 (IPC 桥)            │
+│             Tauri v2 (IPC 桥)             │
 ├──────────────────────────────────────────┤
 │              后端 (Rust)                  │
 │  crypto    │   db     │  generator       │
@@ -66,7 +213,7 @@
 │  AES-GCM   │  加密CRUD │  内置词库 500+  │
 ├──────────────────────────────────────────┤
 │            原生接口                       │
-│   Biometric (指纹)  │  Clipboard (剪贴板) │
+│   Biometric (生物)  │  Clipboard (剪贴板) │
 └──────────────────────────────────────────┘
 ```
 
@@ -83,29 +230,29 @@
 
 - 主密码**永不存储**，仅存 Argon2id 验证哈希
 - 加密密钥仅解密后驻留内存，锁定/退出即销毁
-- Android 指纹解锁通过系统级 BiometricPrompt 验证
+- 生物识别通过系统级 BiometricPrompt 验证
 
 ## 📂 项目结构
 
 ```
 ├── src/                        # Vue 3 前端
 │   ├── components/
-│   │   ├── MasterLock.vue      # 主密码解锁 + 指纹
+│   │   ├── MasterLock.vue      # 主密码解锁 + 生物识别
 │   │   ├── GeneratorPanel.vue  # 密码生成面板
 │   │   ├── PasswordHistory.vue # 历史记录
 │   │   ├── TemplateEditor.vue  # 模板编辑器
-│   │   └── CategoryManager.vue # 分类管理
+│   │   ├── CategoryManager.vue # 分类管理
+│   │   └── Settings.vue        # 设置页
 │   ├── stores/                 # Pinia 状态管理
 │   └── types/                  # TypeScript 类型
 ├── src-tauri/                  # Rust 后端
 │   └── src/
-│       ├── main.rs             # 入口
-│       ├── lib.rs              # 应用配置
+│       ├── main.rs / lib.rs    # 入口 & 配置
 │       ├── commands.rs         # Tauri IPC 命令
 │       ├── crypto.rs           # 加密模块
 │       ├── db.rs               # SQLite 数据库
 │       ├── generator.rs        # 密码生成引擎
-│       └── biometric.rs        # 指纹密钥存储
+│       └── biometric.rs        # 生物识别密钥存储
 └── src-tauri/gen/android/      # Android 工程
 ```
 
