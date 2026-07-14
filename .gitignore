@@ -34,3 +34,6 @@ Thumbs.db
 # Temp
 *.log
 *.tmp
+
+# Release artifacts
+release/
