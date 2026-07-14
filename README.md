@@ -57,19 +57,19 @@ Get the latest from [Releases](https://github.com/cheaterida/PasswordRandom/rele
 
 ```
 ┌──────────────────────────────────────────┐
-│             Frontend (Vue 3 + TS)         │
-│    MasterLock  │  Generator  │  History   │
-│    (unlock)    │  (4 modes)   │  (vault)   │
+│            Frontend (Vue 3 + TS)         │
+│   MasterLock  │  Generator  │  History   │
+│    (unlock)   │  (4 modes)  │  (vault)   │
 ├──────────────────────────────────────────┤
-│            Tauri v2 (IPC bridge)          │
+│            Tauri v2 (IPC bridge)         │
 ├──────────────────────────────────────────┤
-│              Backend (Rust)               │
+│              Backend (Rust)              │
 │  crypto    │   db     │  generator       │
 │  Argon2id  │  SQLite  │  rand + template │
 │  AES-GCM   │  CRUD    │  500+ wordlist   │
 ├──────────────────────────────────────────┤
-│           Native interfaces               │
-│   Biometric  │  Clipboard                │
+│             Native interfaces            │
+│          Biometric  │  Clipboard         │
 └──────────────────────────────────────────┘
 ```
 

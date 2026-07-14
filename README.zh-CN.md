@@ -57,19 +57,19 @@
 
 ```
 ┌──────────────────────────────────────────┐
-│              前端 (Vue 3 + TS)            │
-│    MasterLock  │  Generator  │  History   │
-│    (解锁)       │  (4种模式)   │  (加密库)  │
+│            Frontend (Vue 3 + TS)         │
+│   MasterLock  │  Generator  │  History   │
+│    (unlock)   │  (4 modes)  │  (vault)   │
 ├──────────────────────────────────────────┤
-│             Tauri v2 (IPC 桥)             │
+│            Tauri v2 (IPC bridge)         │
 ├──────────────────────────────────────────┤
-│              后端 (Rust)                  │
+│              Backend (Rust)              │
 │  crypto    │   db     │  generator       │
-│  Argon2id  │  SQLite  │  rand + 模板引擎  │
-│  AES-GCM   │  加密CRUD │  内置词库 500+  │
+│  Argon2id  │  SQLite  │  rand + template │
+│  AES-GCM   │  CRUD    │  500+ wordlist   │
 ├──────────────────────────────────────────┤
-│            原生接口                       │
-│   Biometric (生物)  │  Clipboard (剪贴板) │
+│             Native interfaces            │
+│          Biometric  │  Clipboard         │
 └──────────────────────────────────────────┘
 ```
 
