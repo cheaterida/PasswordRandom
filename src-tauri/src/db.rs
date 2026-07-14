@@ -246,7 +246,7 @@ pub fn get_passwords(
             "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.is_favorite, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id WHERE ph.label LIKE ?1 OR ph.username LIKE ?1 ORDER BY ph.is_favorite DESC, ph.created_at DESC"
         }
         (None, None) => {
-            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id ORDER BY ph.is_favorite DESC, ph.created_at DESC"
+            "SELECT ph.id, ph.category_id, c.name, ph.label, ph.username, ph.ciphertext, ph.nonce, ph.mode, ph.template_id, ph.is_favorite, ph.created_at FROM password_history ph LEFT JOIN categories c ON ph.category_id = c.id ORDER BY ph.is_favorite DESC, ph.created_at DESC"
         }
     };
 

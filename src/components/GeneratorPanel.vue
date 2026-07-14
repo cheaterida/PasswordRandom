@@ -107,7 +107,7 @@ async function copyToClipboard() {
 }
 
 async function showSave() {
-  if (!generated.value) return
+  if (!generated.value || saved.value) return
   await historyStore.loadCategories()
   showSavePanel.value = true
 }
@@ -359,7 +359,7 @@ function onTemplateCreated() {
                   : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300',
               ]"
               :disabled="saved"
-              @click="saved || showSave()"
+              @click="!saved && showSave()"
             >
               {{ saved ? "已保存" : "保存" }}
             </button>

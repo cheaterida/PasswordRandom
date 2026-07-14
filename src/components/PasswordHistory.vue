@@ -214,10 +214,10 @@ function formatTime(ts: string) {
         class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 text-sm text-center"
         @input="historyStore.loadPasswords()"
       />
-      <div class="flex gap-2 justify-center">
+      <div class="flex gap-2">
         <select
           v-model="historyStore.selectedCategory"
-          class="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-200 text-sm focus:outline-none focus:border-emerald-500"
+          class="flex-1 px-2 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-200 text-sm focus:outline-none focus:border-emerald-500 min-w-0"
           @change="historyStore.loadPasswords()"
         >
           <option :value="null">全部分类</option>
@@ -230,40 +230,36 @@ function formatTime(ts: string) {
           </option>
         </select>
         <button
-          class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shrink-0 cursor-pointer transition-colors"
-          @click="showAddPanel = true; historyStore.loadCategories()"
+          :class="[
+            'px-2.5 py-2 text-xs rounded-lg cursor-pointer transition-colors shrink-0',
+            batchMode ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-zinc-200',
+          ]"
+          @click="toggleBatchMode"
         >
-          + 添加
+          {{ batchMode ? "完成" : "批量" }}
         </button>
-      </div>
-    </div>
-
-    <!-- Batch Controls -->
-    <div class="flex gap-2 mb-3 justify-center">
-      <button
-        :class="[
-          'px-3 py-1.5 text-xs rounded-lg cursor-pointer transition-colors',
-          batchMode ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-zinc-200',
-        ]"
-        @click="toggleBatchMode"
-      >
-        {{ batchMode ? "退出多选" : "批量管理" }}
-      </button>
-      <template v-if="batchMode && historyStore.passwords.length > 0">
         <button
-          class="px-3 py-1.5 text-xs bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-lg hover:text-zinc-200 cursor-pointer"
+          v-if="batchMode"
+          class="px-2.5 py-2 text-xs bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-lg hover:text-zinc-200 cursor-pointer shrink-0"
           @click="selectAll"
         >
           全选
         </button>
         <button
-          v-if="selectedIds.size > 0"
-          class="px-3 py-1.5 text-xs bg-red-900/50 text-red-400 border border-red-800 rounded-lg hover:bg-red-900 cursor-pointer"
+          v-if="batchMode && selectedIds.size > 0"
+          class="px-2.5 py-2 text-xs bg-red-900/50 text-red-400 border border-red-800 rounded-lg hover:bg-red-900 cursor-pointer shrink-0"
           @click="batchDelete"
         >
-          删除({{ selectedIds.size }})
+          删({{ selectedIds.size }})
         </button>
-      </template>
+        <button
+          v-if="!batchMode"
+          class="px-2.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg shrink-0 cursor-pointer transition-colors"
+          @click="showAddPanel = true; historyStore.loadCategories()"
+        >
+          + 添加
+        </button>
+      </div>
     </div>
 
     <!-- Passwords List -->
