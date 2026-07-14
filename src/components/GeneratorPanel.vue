@@ -204,10 +204,10 @@ function onTemplateCreated() {
             ]"
             :key="opt.key"
             :class="[
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border cursor-pointer select-none transition-colors',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm cursor-pointer select-none transition-colors',
               randomConfig[opt.key]
-                ? 'bg-emerald-900/30 border-emerald-700 text-emerald-400'
-                : 'bg-zinc-800 border-zinc-700 text-zinc-500',
+                ? 'bg-emerald-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700',
             ]"
             @click="
               randomConfig[opt.key] = !randomConfig[opt.key]
@@ -318,10 +318,10 @@ function onTemplateCreated() {
               v-for="tpl in templateStore.templates"
               :key="tpl.id"
               :class="[
-                'px-3 py-1.5 text-sm rounded-lg border cursor-pointer transition-colors',
+                'px-3 py-1.5 text-sm rounded-lg cursor-pointer transition-colors',
                 selectedTemplateId === tpl.id
-                  ? 'bg-emerald-900/30 border-emerald-700 text-emerald-400'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600',
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700',
               ]"
               @click="selectedTemplateId = tpl.id"
             >
