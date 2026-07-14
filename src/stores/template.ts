@@ -18,5 +18,9 @@ export const useTemplateStore = defineStore("template", {
       await invoke("delete_template", { id })
       this.templates = this.templates.filter((t) => t.id !== id)
     },
+    async updateTemplate(id: number, name: string, pattern: string) {
+      await invoke("update_template", { id, name, pattern })
+      await this.loadTemplates()
+    },
   },
 })

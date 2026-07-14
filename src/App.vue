@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, onMounted, onUnmounted } from "vue"
 import { invoke } from "@tauri-apps/api/core"
 import MasterLock from "./components/MasterLock.vue"
 import GeneratorPanel from "./components/GeneratorPanel.vue"
@@ -9,9 +9,43 @@ import Settings from "./components/Settings.vue"
 const locked = ref(true)
 const activeTab = ref<"generate" | "history" | "settings">("generate")
 const showAbout = ref(false)
+const AUTO_LOCK_SECONDS = 300
+
+let lastActivity = Date.now()
+let timerId: ReturnType<typeof setInterval> | null = null
+
+function resetActivity() {
+  lastActivity = Date.now()
+}
+
+function checkAutoLock() {
+  if (!locked.value && Date.now() - lastActivity >= AUTO_LOCK_SECONDS * 1000) {
+    onLock()
+  }
+}
+
+function setupAutoLock() {
+  const events = ["pointerdown", "keydown", "scroll", "touchstart"]
+  events.forEach((e) => document.addEventListener(e, resetActivity, { passive: true }))
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkAutoLock()
+  })
+  timerId = setInterval(checkAutoLock, 1000)
+}
+
+function teardownAutoLock() {
+  if (timerId) {
+    clearInterval(timerId)
+    timerId = null
+  }
+}
+
+onMounted(setupAutoLock)
+onUnmounted(teardownAutoLock)
 
 async function onUnlocked() {
   locked.value = false
+  resetActivity()
 }
 
 async function onLock() {

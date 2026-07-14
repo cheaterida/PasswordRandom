@@ -360,6 +360,15 @@ pub fn delete_template(conn: &Connection, id: i64) -> Result<(), String> {
         .map_err(|e| format!("{e}"))?;Ok(())
 }
 
+pub fn update_template(conn: &Connection, id: i64, name: &str, pattern: &str) -> Result<(), String> {
+    conn.execute(
+        "UPDATE templates SET name = ?1, pattern = ?2 WHERE id = ?3",
+        params![name, pattern, id],
+    )
+    .map_err(|e| format!("{e}"))?;
+    Ok(())
+}
+
 pub fn save_biometric_config(conn: &Connection, ciphertext: &[u8], nonce: &[u8], salt: &[u8]) -> Result<(), String> {
     conn.execute(
         "INSERT OR REPLACE INTO biometric_config (id, ciphertext, nonce, salt) VALUES (1, ?1, ?2, ?3)",

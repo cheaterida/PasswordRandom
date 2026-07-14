@@ -247,6 +247,12 @@ pub async fn delete_template(state: State<'_, AppState>, id: i64) -> Result<(), 
 }
 
 #[tauri::command]
+pub async fn update_template(state: State<'_, AppState>, id: i64, name: String, pattern: String) -> Result<(), String> {
+    let db = state.db.lock().map_err(|e| format!("{e}"))?;
+    db::update_template(&db, id, &name, &pattern)
+}
+
+#[tauri::command]
 pub async fn biometric_is_available() -> Result<bool, String> {
     Ok(true)
 }

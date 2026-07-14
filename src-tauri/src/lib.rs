@@ -64,6 +64,7 @@ pub fn run() {
             commands::get_templates,
             commands::save_template,
             commands::delete_template,
+            commands::update_template,
             commands::biometric_is_available,
             commands::biometric_enable,
             commands::biometric_disable,
