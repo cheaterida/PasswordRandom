@@ -17,6 +17,10 @@ const dbPath = ref("")
 const dbPathRevealed = ref(false)
 const dbPathLoading = ref(false)
 
+const exportData = ref("")
+const exportRevealed = ref(false)
+const exportLoading = ref(false)
+
 const showChangePw = ref(false)
 const oldPassword = ref("")
 const newPassword = ref("")
@@ -188,6 +192,44 @@ function toggleDbPath() {
   }
 }
 
+async function doExport() {
+  exportLoading.value = true
+  try {
+    const data = await invoke<string>("export_data")
+    exportData.value = data
+    exportRevealed.value = true
+  } catch (e: unknown) {
+    exportData.value = ""
+  } finally {
+    exportLoading.value = false
+  }
+}
+
+function triggerExport() {
+  exportRevealed.value = false
+  exportData.value = ""
+  runWithReAuth(doExport)
+}
+
+async function copyExport() {
+  if (exportData.value) {
+    await writeText(exportData.value)
+  }
+}
+
+function hideExport() {
+  exportRevealed.value = false
+  exportData.value = ""
+}
+
+function toggleExport() {
+  if (exportRevealed.value) {
+    hideExport()
+  } else {
+    triggerExport()
+  }
+}
+
 function applyTheme() {
   if (isLight.value) {
     document.documentElement.classList.add("light")
@@ -312,6 +354,37 @@ async function toggleTheme() {
             复制
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+      <div
+        class="flex items-center justify-between cursor-pointer"
+        @click="toggleExport"
+      >
+        <div>
+          <div class="text-zinc-200 text-sm font-medium">加密导出</div>
+          <div class="text-zinc-500 text-xs mt-0.5">
+            {{ exportRevealed ? "点击隐藏" : exportLoading ? "加密中..." : "需验证身份后导出" }}
+          </div>
+        </div>
+        <span class="text-zinc-500 text-sm">{{ exportRevealed ? "▴" : "▸" }}</span>
+      </div>
+
+      <div v-if="exportRevealed" class="mt-3 space-y-2">
+        <div class="text-zinc-400 text-xs">导出的加密数据 (Base64)，可复制保存到文件：</div>
+        <div class="relative">
+          <div class="text-zinc-300 text-xs font-mono break-all bg-zinc-900 rounded-lg p-2 border border-zinc-700 max-h-32 overflow-y-auto select-all">
+            {{ exportData }}
+          </div>
+        </div>
+        <button
+          class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors cursor-pointer"
+          @click="copyExport"
+        >
+          复制导出数据
+        </button>
       </div>
     </div>
 

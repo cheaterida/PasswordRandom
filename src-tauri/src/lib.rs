@@ -75,6 +75,7 @@ pub fn run() {
             commands::set_preference,
             commands::toggle_favorite,
             commands::delete_passwords,
+            commands::export_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

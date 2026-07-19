@@ -5,6 +5,7 @@ use crate::generator::{self, GenConfig, PinConfig, PassphraseConfig};
 use crate::crypto;
 use crate::biometric;
 use crate::AppState;
+use base64::Engine;
 
 #[tauri::command]
 pub async fn is_initialized(state: State<'_, AppState>) -> Result<bool, String> {
@@ -304,4 +305,49 @@ pub async fn toggle_favorite(state: State<'_, AppState>, id: i64) -> Result<bool
 pub async fn delete_passwords(state: State<'_, AppState>, ids: Vec<i64>) -> Result<(), String> {
     let db = state.db.lock().map_err(|e| format!("{e}"))?;
     db::delete_passwords(&db, &ids)
+}
+
+#[tauri::command]
+pub async fn export_data(state: State<'_, AppState>) -> Result<String, String> {
+    let db = state.db.lock().map_err(|e| format!("{e}"))?;
+    let key_state = state.key.lock().map_err(|e| format!("{e}"))?;
+    let key = key_state.as_ref().ok_or("应用未解锁")?;
+
+    let passwords = db::get_passwords(&db, key, None, None)?;
+    let categories = db::get_categories(&db)?;
+
+    let entries: Vec<serde_json::Value> = passwords.iter().map(|p| {
+        serde_json::json!({
+            "label": p.label,
+            "username": p.username,
+            "password": p.password,
+            "category": p.category_name,
+            "mode": p.mode,
+            "created_at": p.created_at,
+        })
+    }).collect();
+
+    let cats: Vec<serde_json::Value> = categories.iter().map(|c| {
+        serde_json::json!({
+            "name": c.name,
+            "icon": c.icon,
+        })
+    }).collect();
+
+    let export = serde_json::json!({
+        "version": 1,
+        "app": "PasswordRandom",
+        "exported_at": format!("{}", std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)),
+        "categories": cats,
+        "entries": entries,
+    });
+
+    let plaintext = serde_json::to_vec(&export).map_err(|e| format!("序列化失败: {e}"))?;
+    let (ciphertext, nonce) = crypto::encrypt(key, &plaintext)?;
+    let mut output = nonce.to_vec();
+    output.extend_from_slice(&ciphertext);
+    Ok(base64::engine::general_purpose::STANDARD.encode(&output))
 }
